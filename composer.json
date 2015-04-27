@@ -1,0 +1,9 @@
+{"name": "vahitserifsaglam1/framework",
+    "description": "Basic framework",
+
+    "autoload": {
+    "classmap" : [
+        "Myfc"
+     ]
+    }
+}
