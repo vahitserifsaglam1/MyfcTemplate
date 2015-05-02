@@ -3,7 +3,7 @@
 
 
 namespace Myfc\Template\MyfcTemplate;
-
+use stdClass;
 /**
  * Description of MyfcTemplateCollector
  *
@@ -16,38 +16,71 @@ class MyfcTemplateCollector {
     public function __construct() {
         
     }
-    
+  
+    /**
+     * Diziyi objeye döndürür
+     * @param array $arr
+     * @return stdClass
+     */
+ 
+    private function convertToObject(array $arr =[] ){
+        
+        $object = new stdClass();
+        
+        foreach($arr as $key => $value){
+            
+            if(is_array($value)){
+                
+                $value = $this->convertToObject($value);
+                
+            }
+            
+            $object->$key = $value;
+            
+        }
+        
+        return $object;
+        
+        
+    }
+
+        
     /**
      * Sınıfa collection eklemesi yapar
-     * @param type $params
-     * @param type $vall
+     * @param mixed $params
+     * @param mixed $vall
      * @return \Myfc\Template\MyfcTemplate\MyfcTemplateCollector
      */
     public function addCollection($params, $vall = null){
         
         if(is_null($vall) && is_array($params)){
-            $params = array_map(function($a){
-               
-                if(is_array($a)){
-                    
-                    return (object) $a;
-                    
-                }else{
-                    
-                    return $a;
-                    
-                }
-                
-            },$params);
             
-            $this->collection = array_merge($this->collection, $params);
+            $array = [];
+            
+            foreach($params as $key => $value){
+               
+          
+                  if(is_array($value)){
+                      
+                      $array[$key] = $this->convertToObject($value);
+                      
+                  }else{
+                      
+                      $array[$key] = $value;
+                      
+                  }
+                   
+                
+            }
+  
+            
+            $this->collection = array_merge($this->collection, $array);
             
         }elseif(!is_null($vall) && !is_array($params)){
             
            $this->collection[$params] = $vall;
             
         }
-        
         
         return $this;
         
@@ -71,6 +104,7 @@ class MyfcTemplateCollector {
     
     public function get($name = ''){
         
+        
         if(isset($this->collection[$name])){
             
              return $this->collection[$name];
@@ -81,7 +115,7 @@ class MyfcTemplateCollector {
     
     /**
      * 
-     * @param type $name
+     * @param string $name
      */
     public function delete($name){
         

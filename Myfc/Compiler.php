@@ -1,4 +1,31 @@
 <?php
+/**
+ * 
+ *   {# for $variablename in 1..9 #}
+ * 
+ *   {# for $variablename as key #}
+ * 
+ *   {# for $variablename as key to value #}
+ * 
+ *   {# while $variablecheck #}
+ * 
+ * 
+ *   {# if(test = var) #}
+ * 
+ *   {# if(test) #}
+ * 
+ *   {{ @block('aasd') }} // block çağırma
+ * 
+ *   {{ $variable }} 
+ * 
+ *   {{ $variable|lower }}
+ * 
+ *   {{ $variable|upper }}
+ * 
+ *   {{ $variable|title }}
+ * 
+ */
+
 
 namespace Myfc;
 use Myfc\Stream;
@@ -18,12 +45,36 @@ class Compiler {
     
     public $system;
     
+    public $block;
+    
     public function __construct($content = '', MyfcTemplate $system ) {
     
         $this->content = $content;
         $this->system = $system;
         
     }
+    
+    
+          /**
+           * 
+           * @param type $blockName
+           * @param type $blockContent
+           * @return $this
+           */
+          
+          public function addBlock($blockName, $blockContent){
+              
+              $this->block[$blockName] = $blockContent;
+              return $this;
+              
+          }
+          
+          public function getBlock($blockName){
+ 
+              return $this->block[$blockName];
+              
+          }
+
     
     /**
      * İçerik ataması yapar
@@ -54,46 +105,22 @@ class Compiler {
      */
     public function parseLine(){
         
-        $parse = explode("\n", $this->getContent());
-        $parse = $this->parseEndOfLine($parse);
-        $this->parsedLine = $this->cleanNullsFromParsedLines($parse);
+        $parsedLine = explode("\n",$this->getContent());
+        $this->parsedLine =  $this->cleanNullsFromParsedLines($this->parseEndLine($parsedLine));
         return $this;
         
     }
     
-    private function parseEndOfLine(array $parse = array())
-    {
-        $array = array();
-        
-        $parseKey = "(;)";
-        foreach($parse as $key){
-            
-            if(strstr($key,$parseKey)){
-                
-                $explode = explode($parseKey,$key);
-                foreach($explode as $val){
-                    
-                    $array[] = $val;
-                    
-                }
-                
-            }else{
-                
-                $array[] = $key;
-                
-            }
-            
-        }
-        
-     
-        return $array;
-        
-        
-    }
-
+ 
+    /**
+     * 
+     * @param type $content
+     * @return array
+     */
     public function getTemplateFromParsedLines($content = null){
         
-        $array = array();
+       
+        $array = [];
        
         (is_null($content)) ? $content = $this->content:$content;
         
@@ -120,10 +147,75 @@ class Compiler {
             
         }
        
-        
         return $array;
         
     }
+    
+    /**
+     * Bir satırda iki tane veya daha fazla veri varsa parçalar
+     * @param array $explode
+     */
+    
+    private function parseEndLine(array $explode = [] ){
+    
+            
+            $pattern = "{{\s([a-zA-Z0-9]+)\s}}";
+            $array = [];
+            foreach($explode as $key => $value){
+           
+          
+            if($ex = explode("}",$value)){
+                
+                $ex = $this->cleanNullsFromParsedLines($ex);
+               
+ 
+               foreach($ex as $v){
+                   
+                   if(strstr($v,"{{")) $type = Stream::STANDART;
+                   elseif(strstr($v,"{#")) $type = Stream::SPECIAL;
+                   
+                   $v = str_replace("{{", "", $v);
+                   $v = str_replace("{#", "", $v);
+                   $v = str_replace("#", "", $v);
+                   $v = trim($v);
+                   
+                   switch($type){
+                       
+                       case Stream::STANDART:
+                           
+                           $v = Stream::STANDART_TAG_OPEN." $v ".Stream::STANDART_TAG_CLOSE; 
+                           
+                           break;
+                       
+                        case Stream::SPECIAL:
+                           
+                           $v = Stream::SPECIAL_TAG_OPEN." $v ".Stream::SPECIAL_TAG_CLOSE; 
+                           
+                           break;
+               
+               
+                   }
+                   
+                   $array[] = $v;
+
+               }
+               
+            
+                
+            }else{
+                
+                $array[] = $value;
+                
+            }
+                
+            }
+
+            
+    return $array;
+        
+    }
+    
+
     
     /**
      * if- for gibi parçalama işlemlerinde iç kısımdaki verileri algılamak için kullanılacak
@@ -144,8 +236,7 @@ class Compiler {
         return [
                 'lines' => $this->getTemplateFromParsedLines($content),
                 'content' => $content,
-            'newcontent' => $this->getSubParseContent($lines[$startIndex]['end'], $lines[$endIndex]['start'])
-            
+                'newcontent' => $this->getSubParseContent($lines[$startIndex]['end'], $lines[$endIndex]['start'])
                 ];
         
     }
@@ -170,7 +261,7 @@ class Compiler {
     public function compile($type, $lines, $content,$cleaned, Stream $stream){
         
         // otomatik parçalayacak fonksiyona yönlendirir
-       return call_user_func_array(array($this,$type."Compiler"), $this->unsetTypeFromArgs(func_get_args()));
+       return call_user_func_array([$this,$type."Compiler"], $this->unsetTypeFromArgs(func_get_args()));
         
         
     }
@@ -351,7 +442,23 @@ class Compiler {
         return $cont;
         
     }
-    
+    /**
+     * 
+     * @param type $lines
+     * @param type $content
+     * @param type $cleaned
+     * @param Stream $stream
+     * @return type
+     */
+    public function blockCompiler($lines,$content,$cleaned,  Stream $stream){
+       
+            $blockName = $this->replaceParameter($lines[0]['content'], Stream::SPECIAL_TAG_OPEN." block", Stream::SPECIAL_TAG_CLOSE);
+            $blockContent =  $stream->startParseContent($content,$cleaned);
+            $this->addBlock($blockName, $blockContent);
+            return $blockContent;
+    }
+
+
     /**
      * While parçalaması yapılır
      * @param type $lines
@@ -459,6 +566,7 @@ class Compiler {
                     . 'return true;'
                     . '}';
     
+            
            
               $check = eval($evalString);
                     
@@ -483,74 +591,217 @@ class Compiler {
         
     }
     
+    /**
+     * 
+     * @param string $cleaned
+     * @return string
+     */
     
-    public function getParameterValue($value){
+    private function checkIfSystemCompilerFunction($cleaned){
         
         
-         $param = $this->replaceParameter($value, Stream::STANDART_TAG_OPEN,Stream::STANDART_TAG_CLOSE);
-         
-       
-          if(!strstr($param,"(")&&!strstr($param,")")){  
-          if(!strstr($param, "|")) $param .= "|get";
-           $parsed = explode("|", $param);
-          
-           list($param , $function) = $parsed;
-           if(strstr($param, ".")){
-           $param = $this->paramParseObjectGenarator($param);   
-           }
-           //
-         
-           $params = array();
-              if(strstr($function,"@"))
-           {
-               
-               $params[] = $this->system;
-               
-           }
-        
-           if(!strstr($function, ".")){
-               
-               $function = "System.".$function;
-               
-           }
-           
-           $p = explode(".",$function);
-           
-           list($class , $functionName) = $p;
-           
-           $class = $this->system->extensionManager->getExtension($class);
-           
-           $param = $this->system->collector->get($param);
-          
-           
-           if(method_exists($class,$functionName)){
-               
-               $paramArray = array($param);
-               
-         
-               
-               $params = array_merge($paramArray, $params);
-               
-            
-           
-               $paramVal = call_user_func_array(array($class,$functionName), $params);
-               
-           }else{
-               
-               throw new Exception(sprintf("%s çağrılabilir bir fonksiyon değil",$function));
-               
-           }
-           
-          }else{
-              
-              $paramVal = $this->findedFunctionStartFunctionParsing($param);
-              
-          }
-           
-           return $paramVal;
+        return (strstr($cleaned,"@")) ? str_replace("@","",$cleaned):null;
         
     }
     
+    /**
+     * 
+     * @param array $params
+     * @return array
+     */
+    
+    private function genareteFunctionParams($params){
+       
+        
+        $params = explode(",",$params);
+       
+        $array = [];
+        
+        foreach($params as $key){
+            
+            $array[] = $this->getParameterValue($key);
+            
+        }
+        
+        return $array;
+        
+        
+    }
+
+    
+    /**
+     * 
+     * @param array $matches
+     * @return array
+     */
+
+    private function genareteFunctionNameAndParams($matches = []){
+        
+            list(, $name,$params) = $matches;
+            
+            return [
+                'name' => $name,
+                'params' => $this->genareteFunctionParams($params),
+            ];
+        
+    }
+    
+    /**
+     * 
+     * @param string $param
+     * @return array
+     */
+    
+    private function findFunctionParams($param = ''){
+        
+            $pattern= "/([a-zA-Z]+).*\(([^)]*)\)/";
+             // pregmatch
+             $parse = preg_match($pattern, $param, $matches);
+                     
+             return $matches;
+        
+    }
+
+    /**
+     * Parametrelerin değerlerini alır
+     * @param string $value
+     * @param Stream $stream
+     * @return string
+     */
+        public function getParameterValue($value,$stream = null){
+        
+         $param = $this->replaceParameter($value, Stream::STANDART_TAG_OPEN,Stream::STANDART_TAG_CLOSE);
+         
+         if($check = $this->checkIfSystemCompilerFunction($param)){
+            
+             $extension = $this->system->extensionManager->getExtension('System');
+         
+             $param = $check;
+             
+             $parse = $this->genareteFunctionNameAndParams($this->findFunctionParams($param));
+            
+           
+             $function = $parse['name'];
+             $params = $parse['params'];
+             $params[] = $this->system;
+            
+            return call_user_func_array([$extension,$function],$params);
+
+         }
+         if(strstr($param,"(") && strstr($param,")")){
+             
+             $parse = $this->genareteFunctionNameAndParams($this->findFunctionParams($param));
+            
+             $function = $parse['name'];
+             $params = $parse['params'];
+            
+             return call_user_func_array($function, $params);
+          
+             
+         }else{
+                   
+      
+                 
+                   // kontrolu  
+                   if(!strstr($param,"|")){
+                       
+                      $param .= "|System.get";
+                       
+                   }
+               
+               
+                   
+                   list($parameter, $extensionNameAndFunction) = explode("|",$param);
+                   
+                    $parameter = $this->paramStringOrParamNameChecker($parameter);
+                   
+                    $params[] = $parameter;
+                    
+        
+                    
+                    list($extension, $function) = $this->getExtensionNameAndFunction($extensionNameAndFunction);
+
+             }
+             
+         
+    
+        
+         
+         $extension = $this->system->extensionManager->getExtension($extension);
+            
+         return call_user_func_array([$extension,$function],$params);
+        
+    }
+    
+    /**
+     * Eklenti adını ve çağrılacak fonksiyonu döndürür
+     * @param string $extensionName
+     * @return array
+     */
+    
+    private function getExtensionNameAndFunction($extensionName){
+        
+             if(!strstr($extensionName,".")){
+            
+               $extensionName = "System.$extensionName";
+            
+             }
+        
+            if($ex = explode(".", $extensionName)){
+                
+       
+                
+                if(count($ex)>2){
+                    
+                    $ex = array_slice($ex, 0, 2);
+                    
+                }
+                
+                $return = [$ex[0],$ex[1]];
+                
+                
+            }
+            
+            return $return;
+        
+    }
+
+
+    /**
+     * Parametrenin bir string değer olup olmadığını kontrol eder
+     * @param string $param
+     * @return type
+     */
+    private function paramStringOrParamNameChecker($param){
+        
+        $val = $param;
+        
+        if(strstr($param,"'") || strstr($param,'"')){
+                     
+                     $param  = str_replace("'","",$param);
+                     $param = str_replace('"', "", $param);
+                     
+                     $val = $param;
+                     
+                    
+                     
+                 }else{
+                     
+                     
+                     if($param = $this->paramParseObjectGenarator($param)){
+                         
+                         $val = $param;
+                         
+                     }
+                     
+                 }
+                 
+               
+                return $val;
+        
+    }
+
+
     public function replaceParameter($value,$tagOpen,$tagClose){
         
          
@@ -572,63 +823,6 @@ class Compiler {
       
     }
 
-
-    
-    private function findedFunctionStartFunctionParsing($param){
-        
-        $replaced = $this->replaceParameter($param,Stream::STANDART_TAG_OPEN,Stream::STANDART_TAG_CLOSE);
-       
-        $pattern= "/([a-zA-Z]+).*\(([^)]*)\)/";
-        // pregmatch
-        $parse = preg_match($pattern, $replaced, $matches);
-        
-        if($parse){
-            
-            list(, $functionName, $functionParams) = $matches;
-            
-           
-            // function parametresi boş değilse parametreleri parçalıyoruz
-            if($functionParams != ''){
-              
-           
-            
-                $paramsExplode = explode(",",$functionParams);
-                $thi = $this;
-                $functionParams = array_filter($paramsExplode, function($a) use($thi){
-                   
-                    return $thi->checkParameterOrStringAndGetValue($a);
-                    
-                    
-                });
-                 
-                
-            }else{
-                
-                $functionParams = array();
-                
-            }
-            
-            // eğer parametreler bir dizi değilse dizi oluşturuyoruz
-            if(!is_array($functionParams)){
-                
-            $functionParams = array($functionParams);
-                
-             }
-            
-             if(function_exists($functionName)){
-                 
-                     return call_user_func_array($functionName, $functionParams);
-                 
-             }else{
-                 
-                 throw new Exception(sprintf("%s adında bir fonksiyon bulunamadı", $functionName));
-                 
-             }
-            
-        
-            
-        }
-    }
     
     /**
      * Parçala behçet
@@ -637,11 +831,13 @@ class Compiler {
      */
      private function paramParseObjectGenarator($param){
        
-        
+        if(strstr($param,".")){
+            
         $ex = explode(".", $param);
         $first = $ex[0];
         unset($ex[0]);
         $s = implode("->",$ex);
+
         $value = $this->system->collector->get($first);
         if(is_object($value)){
           
@@ -654,6 +850,13 @@ class Compiler {
             
         }
         
+            
+        }else{
+    
+            return $this->system->collector->get($param);
+            
+        }
+
    }
    
    /**
@@ -682,19 +885,27 @@ class Compiler {
    
    private function cleanNullsFromParsedLines(array $parsed = []){
        
+ 
        $array = [];
-       
-       foreach ($parsed as $key => $value){
+       $a = [];
+       $array = array_filter($parsed, function($a){
            
-           if($value != "" || $value !== null){
+           if($a !== "" || $a !== null){
                
-               $array[] = $value;
+               return $a;
                
            }
            
+       });
+       
+       foreach ($array as $key => $value){
+
+            $a[] = $value;
+           
+           
        }
        
-       return $array;
+       return $a;
        
    }
   
@@ -705,24 +916,33 @@ class Compiler {
     */
    public function checkParameterOrStringAndGetValue($a, $check = false){
        
-            
+    
+    
+           
+          
+           
             if($cd = $this->getParameterValue($a)){
                 
-                return $cd;
+                
+                $return = $cd;
                 
                 
             }else{
                 
                 if($check){
                     
-                                    return $this->generateFunctionParameter($a);
+                 $return =  $this->generateFunctionParameter($a);
 
+                }else{
+                    
+                    $return = $a;
                     
                 }
                 
             }
-                    
-       
+          
+            return $return;
+
    }
    
    public function generateFunctionParameter($a){

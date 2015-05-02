@@ -19,13 +19,13 @@ class MyfcTemplate {
      *
      * @var MyfcTemplateLoader
      */
-    private $loader;
+    public $loader;
     
     /**
      *
      * @var MyfcTemplateCompiler 
      */
-    private $compiler;
+    public $compiler;
     
     /**
      *
@@ -52,8 +52,7 @@ class MyfcTemplate {
         $this->loader =  new MyfcTemplateLoader(File::boot(), $this->configsManager->get('fileExtension'));
         $this->collector = new MyfcTemplateCollector();
         $this->extensionManager = ($extensionManager !== null) ? $extensionManager:new MyfcTemplateExtensionManager();
-        $this->compiler = new Compiler('',$this);
-        
+         $this->compiler = new Compiler('',$this);
       
     }
     
@@ -74,9 +73,9 @@ class MyfcTemplate {
     public function display($file, $parametres = array(), $return = false){
         
   
-        $this->loader->setTemplatePath($this->configsManager->get('templatePath'));
-        $content = $this->loader->load($file);
-    
+         $this->loader->setTemplatePath($this->configsManager->get('templatePath'));
+         $content = $this->loader->load($file);
+         $this->compiler = new Compiler('',$this);
          $this->compiler->setContent($content);
          $stream = new Stream($this->compiler);
        

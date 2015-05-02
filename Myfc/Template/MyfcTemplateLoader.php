@@ -77,7 +77,7 @@ class MyfcTemplateLoader {
             
             if(is_readable($this->filesystem->inPath($path))){
                 
-                return $this->filesystem->read($path);
+                return $this->filesystem->read($path,true);
                 
             }else{
                 

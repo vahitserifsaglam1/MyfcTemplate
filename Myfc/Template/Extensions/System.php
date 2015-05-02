@@ -4,7 +4,7 @@
 namespace Myfc\Template\MyfcTemplate\Extensions;
 use Myfc\Support\Str;
 use Myfc\Template\MyfcTemplate\Interfaces\MyfcTemplateExtensionInterface;
-use Myfc\Template;
+use Myfc\MyfcTemplate;
 /**
  * Description of System
  *
@@ -25,7 +25,7 @@ class System implements MyfcTemplateExtensionInterface {
     }
     
     public function get($name){
-        
+    
         return $name;
         
     }
@@ -37,7 +37,7 @@ class System implements MyfcTemplateExtensionInterface {
      */
     public function length($param){
         
-        return Str::length($param);
+        return strlen($param);
         
     }
     
@@ -48,7 +48,7 @@ class System implements MyfcTemplateExtensionInterface {
      */
     public function lower($value){
         
-        return Str::lower($value);
+        return mb_convert_case($value, MB_CASE_LOWER,'utf-8');
         
     
     }
@@ -60,7 +60,7 @@ class System implements MyfcTemplateExtensionInterface {
      */
     public function upper($value){
         
-        return Str::upper($value);
+       return mb_convert_case($value, MB_CASE_UPPER,'utf-8');
         
     }
     
@@ -71,7 +71,7 @@ class System implements MyfcTemplateExtensionInterface {
      */
     public function title($value){
         
-        return Str::title($value);
+        return mb_convert_case($value, MB_CASE_TITLE,'utf-8');
         
     }
     
@@ -81,11 +81,18 @@ class System implements MyfcTemplateExtensionInterface {
         
     }
     
-    public function extend($name,  Template $system){
+    public function extend($name,  MyfcTemplate $system){
+        
         
         $content = $system->loader->load($name);
         return $content;
         
     }
+    
+    public function block($name, $compiler){
+        return $compiler->getBlock($name);
+        
+    }
+    
     
 }

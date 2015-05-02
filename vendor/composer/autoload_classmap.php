@@ -28,4 +28,5 @@ return array(
     'Myfc\\Template\\MyfcTemplate\\MyfcTemplateConfigManager' => $baseDir . '/Myfc/Template/MyfcTemplateConfigManager.php',
     'Myfc\\Template\\MyfcTemplate\\MyfcTemplateExtensionManager' => $baseDir . '/Myfc/Template/MyfcTemplateExtensionManager.php',
     'Myfc\\Template\\MyfcTemplate\\MyfcTemplateLoader' => $baseDir . '/Myfc/Template/MyfcTemplateLoader.php',
+    'Myfc\\Template\\MyfcTemplate\\Tags' => $baseDir . '/Myfc/Template/Tags.php',
 );
