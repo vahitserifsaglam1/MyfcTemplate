@@ -39,13 +39,7 @@ class Tags {
                     $content = $stream->replaceFullContent($oldContent, $newContent,$content);
                     
                    } 
-                   elseif(is_integer($this->test($lineContent, 'elseif'))){
-                   
-                    list($oldContent, $newContent, $lines) = $this->parseTagsStartAndEnd('elseif',$lines, $line, $key,$stream);
-                       
-                    $content = $stream->replaceFullContent( $oldContent, $newContent, $content);
-                    
-                   }
+    
                    
 
                   
